@@ -1,0 +1,11 @@
+# Dependency directories
+node_modules/
+
+# Production build output
+dist/
+
+# Local configuration and logs
+.system_generated/
+*.log
+.DS_Store
+Thumbs.db

@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VoltMap - National EV Charging Geospatial Dashboard</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    
+    <!-- Dashboard Styles -->
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+    <!-- Loading Overlay -->
+    <div id="loader" class="loading-overlay">
+        <div class="spinner"></div>
+        <div style="text-align: center;">
+            <h2 style="font-family: 'Outfit', sans-serif; font-weight: 700; color: #fff; margin-bottom: 0.5rem; letter-spacing: 0.5px;">
+                <i class="fa-solid fa-bolt" style="color: #00f2fe; text-shadow: 0 0 10px rgba(0,242,254,0.5);"></i> VoltMap Analytics
+            </h2>
+            <p style="color: #9ca3af; font-size: 0.85rem;">Processing national spatial data pipelines...</p>
+        </div>
+    </div>
+
+    <!-- Main Application Wrapper -->
+    <div class="app-container">
+        
+        <!-- Header -->
+        <header>
+            <div class="brand">
+                <i class="fa-solid fa-charging-station brand-icon"></i>
+                <h1>VoltMap</h1>
+                <span>Enterprise v2.4</span>
+            </div>
+            
+            <div class="header-meta">
+                <div class="meta-item">
+                    <i class="fa-solid fa-circle-dot" style="color: #39ff14; font-size: 0.65rem; animation: pulse 1.5s infinite;"></i>
+                    <span>Pipeline Status: <strong>Live Sync</strong></span>
+                </div>
+                <div class="meta-item">
+                    <i class="fa-solid fa-database"></i>
+                    <span>Cleaned Rows: <strong id="header-dataset-size">0</strong></span>
+                </div>
+                <div class="meta-item">
+                    <i class="fa-solid fa-clock"></i>
+                    <span id="current-time">Time: 11:27 AM</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dashboard Layout -->
+        <div class="dashboard-layout">
+            
+            <!-- Sidebar: Filter Controls -->
+            <aside class="sidebar">
+                <div class="section-title">
+                    <span>Interactive Filters</span>
+                    <i class="fa-solid fa-sliders"></i>
+                </div>
+
+                <!-- Search Input -->
+                <div class="filter-group">
+                    <label class="filter-label" for="search-input">Search Stations</label>
+                    <div class="search-box">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="search-input" class="search-input" placeholder="Search by name or city..." />
+                    </div>
+                </div>
+
+                <!-- City Selector -->
+                <div class="filter-group">
+                    <label class="filter-label" for="city-filter">Geographic Hub</label>
+                    <select id="city-filter" class="search-input" style="padding-left: 1rem;">
+                        <option value="All">All Indian Cities</option>
+                        <option value="Mumbai">Mumbai, MH</option>
+                        <option value="Delhi NCR">Delhi NCR</option>
+                        <option value="Bengaluru">Bengaluru, KA</option>
+                        <option value="Chennai">Chennai, TN</option>
+                        <option value="Hyderabad">Hyderabad, TS</option>
+                        <option value="Pune">Pune, MH</option>
+                        <option value="Kolkata">Kolkata, WB</option>
+                        <option value="Ahmedabad">Ahmedabad, GJ</option>
+                    </select>
+                </div>
+
+                <!-- Power Level Selector -->
+                <div class="filter-group">
+                    <label class="filter-label">Power Type</label>
+                    <div class="segmented-control">
+                        <button class="segment-btn active" data-value="All">All Types</button>
+                        <button class="segment-btn" data-value="DC Fast">DC Fast</button>
+                        <button class="segment-btn" data-value="Level 2">Level 2</button>
+                    </div>
+                </div>
+
+                <!-- Operator Checkboxes -->
+                <div class="filter-group">
+                    <label class="filter-label">Network Operators</label>
+                    <div class="checkbox-list" id="operator-checkbox-list">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Connector Type Checklist -->
+                <div class="filter-group">
+                    <label class="filter-label">Connector Standard</label>
+                    <div class="checkbox-list" id="connector-checkbox-list">
+                        <label class="checkbox-container">CCS2 (DC Fast)
+                            <input type="checkbox" value="CCS2" checked />
+                            <span class="checkmark"></span>
+                        </label>
+                        <label class="checkbox-container">Type 2 (AC)
+                            <input type="checkbox" value="Type 2" checked />
+                            <span class="checkmark"></span>
+                        </label>
+                        <label class="checkbox-container">GB/T (DC Fast)
+                            <input type="checkbox" value="GB/T" checked />
+                            <span class="checkmark"></span>
+                        </label>
+                        <label class="checkbox-container">15A Socket
+                            <input type="checkbox" value="15A Socket" checked />
+                            <span class="checkmark"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Status Checklist -->
+                <div class="filter-group">
+                    <label class="filter-label">Availability Status</label>
+                    <div class="checkbox-list" id="status-checkbox-list">
+                        <label class="checkbox-container">Available (Green)
+                            <input type="checkbox" value="Available" checked />
+                            <span class="checkmark"></span>
+                        </label>
+                        <label class="checkbox-container">In Use (Orange)
+                            <input type="checkbox" value="In Use" checked />
+                            <span class="checkmark"></span>
+                        </label>
+                        <label class="checkbox-container">Under Maintenance
+                            <input type="checkbox" value="Maintenance" checked />
+                            <span class="checkmark"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Reset Filters Button -->
+                <button id="reset-filters" class="reset-btn">
+                    <i class="fa-solid fa-arrow-rotate-left"></i>
+                    Reset Filters
+                </button>
+            </aside>
+
+            <!-- Main Content Container -->
+            <main class="main-content">
+                
+                <!-- KPI Statistics Row -->
+                <section class="stats-grid">
+                    <div class="stat-card electric">
+                        <div class="stat-info">
+                            <span class="stat-label">Charging Locations</span>
+                            <span class="stat-value" id="kpi-total-stations">0</span>
+                            <div class="stat-change up">
+                                <i class="fa-solid fa-arrow-trend-up"></i>
+                                <span>National coverage growth</span>
+                            </div>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fa-solid fa-map-location-dot"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card green">
+                        <div class="stat-info">
+                            <span class="stat-label">Available Ports</span>
+                            <span class="stat-value" id="kpi-available-ports">0</span>
+                            <div class="stat-change up">
+                                <i class="fa-solid fa-circle-check"></i>
+                                <span id="kpi-available-ports-percent">0% online</span>
+                            </div>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fa-solid fa-plug"></i>
+                        </div>
+                    </div>
+
+                    <div class="stat-card cyan">
+                        <div class="stat-info">
+                            <span class="stat-label">Average Capacity</span>
+                            <span class="stat-value" id="kpi-avg-power">0 kW</span>
+                            <div class="stat-change up">
+                                <i class="fa-solid fa-bolt-lightning"></i>
+                                <span>Ultra-fast dominance</span>
+                            </div>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fa-solid fa-bolt"></i>
+                        </div>
+                    </div>
+
+                    <div class="stat-card blue">
+                        <div class="stat-info">
+                            <span class="stat-label">Average Cost</span>
+                            <span class="stat-value" id="kpi-avg-price">₹0.00/kWh</span>
+                            <div class="stat-change down">
+                                <i class="fa-solid fa-tags"></i>
+                                <span>Session utility index</span>
+                            </div>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fa-solid fa-indian-rupee-sign"></i>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Central Grid (Map & Charts) -->
+                <section class="central-dashboard-grid">
+                    
+                    <!-- Geospatial Map Viewport -->
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fa-solid fa-earth-americas"></i>
+                                <span>National Charging Coverage Map</span>
+                            </div>
+                            <div class="map-overlay-controls" style="position: static; flex-direction: row; gap: 0.5rem;">
+                                <button id="map-recenter-btn" class="map-control-btn">
+                                    <i class="fa-solid fa-expand"></i> Recenter Map
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div id="map-viewport"></div>
+                        </div>
+                    </div>
+
+                    <!-- Charts / Analytics Pane -->
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fa-solid fa-chart-pie"></i>
+                                <span>Coverage & Analytics</span>
+                            </div>
+                        </div>
+                        <div class="charts-stack">
+                            
+                            <!-- Charger Type Distribution -->
+                            <div class="chart-wrapper">
+                                <h4>Charger Speed Profiles</h4>
+                                <div class="chart-canvas-container">
+                                    <canvas id="type-chart"></canvas>
+                                </div>
+                            </div>
+
+                            <!-- Operator Market Share -->
+                            <div class="chart-wrapper">
+                                <h4>Network Distribution</h4>
+                                <div class="chart-canvas-container">
+                                    <canvas id="operator-chart"></canvas>
+                                </div>
+                            </div>
+                            
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Stations Inventory / Table -->
+                <section class="dashboard-card station-list-section">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fa-solid fa-list"></i>
+                            <span>Cleaned Datasets (Pandas Export Equivalent)</span>
+                        </div>
+                        <span style="font-size: 0.8rem; color: var(--text-secondary);" id="stations-table-count">
+                            Showing 0 of 0 matching records
+                        </span>
+                    </div>
+                    <div class="card-body" style="padding: 0;">
+                        <div class="table-wrapper">
+                            <table class="station-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Name</th>
+                                        <th>City</th>
+                                        <th>Operator</th>
+                                        <th>Connectors</th>
+                                        <th>Power Output</th>
+                                        <th>Ports (Avail/Total)</th>
+                                        <th>Unit Cost</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="station-table-body">
+                                    <!-- Populated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" 
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+            
+    <!-- ChartJS -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- App Data -->
+    <script type="module" src="js/data.js"></script>
+    
+    <!-- App Logic -->
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>
