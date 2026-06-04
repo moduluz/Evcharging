@@ -2,7 +2,7 @@
 
 document.addEventListener("DOMContentLoaded", () => {
     // ----------------------------------------------------
-    // State Management
+    // State Management.
     // ----------------------------------------------------
     let map = null;
     let markersLayer = L.layerGroup();

@@ -1,4 +1,4 @@
-// High-fidelity spatial dataset for EV Charging Stations
+// High-fidelity spatial dataset for EV Charging Stations.
 // Programmatically generated with realistic clusters around major US hubs to simulate spatial datasets.
 
 const CITIES = [
